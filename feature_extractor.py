@@ -17,18 +17,16 @@ __status__ = "early alpha"
 import csv
 import argparse
 from collections import defaultdict, Counter
-
 import numpy as np
-#from scipy.sparse import lil_matrix
-#from nltk.stem.snowball import SnowballStemmer
 
 def read_features_from_csv(args):
     X = []
     y = []
-    with open(args.csv, 'rb') as csvfile:
+    with open(args.csv, 'r') as csvfile:
         csv_reader = csv.reader(csvfile, delimiter=args.delimiter)
-        header = csv_reader.next()
+        header = next(csv_reader)
         label_index = header.index('label')
+        text_index = header.index('text-cat')
 
         feature_indices = []
         for feature in args.features:
@@ -39,11 +37,10 @@ def read_features_from_csv(args):
 
         types = get_column_types(header)
         for line in csv_reader:
-            label, features = get_line_features(line, types, label_index, feature_indices, args)
+            label, features = get_line_features(line, types, label_index, text_index, feature_indices, args)
             X.append(features)
             y.append(label)
 
-    #import pdb; pdb.set_trace()
     return X, np.asarray(y, dtype=str)
 
 def get_column_types(header):
@@ -57,7 +54,7 @@ def get_column_types(header):
 
     return types
 
-def get_line_features(line, feature_dtypes, label_index, feature_indices, args):
+def get_line_features(line, feature_dtypes, label_index, text_index, feature_indices, args):
     '''
     Gets the features in a line.
     Must have the format (label, feature(s)).
@@ -68,7 +65,6 @@ def get_line_features(line, feature_dtypes, label_index, feature_indices, args):
     # * Some features neet to be converted to categories
     # * Lemmatisation etc. for text
     label = line[label_index]
-    text_index = 1 #FIXME
     #label = label_to_id[line[label_index]]
 
     features = []
@@ -96,7 +92,7 @@ def get_line_features(line, feature_dtypes, label_index, feature_indices, args):
     return label, features
 
 def find_ngrams(sentence, n):
-  return set(zip(*[sentence[idx:] for idx in range(n)]))
+  return set(zip(*[sentence[idx:] for idx in xrange(n)]))
 
 def preprocess(word):
     return word.strip()#stemmer.stem(word.strip())
@@ -120,22 +116,14 @@ def features_to_one_hot(X):
             if cat_id in features_to_use:
                 one_hot_X[idx, new_feature_ids[cat_id]] = 1
 
-    return one_hot_X
+    id_to_cat = dict([(idx, cat) for cat, idx in cat_to_id.iteritems()])
+    id_to_char = dict([(new_id, id_to_cat[old_id]) for old_id, new_id in new_feature_ids.iteritems()])
 
-def prune_features(X):
-    '''Delete features which occur very rarely.'''
-    n_instances  = X.shape[0]
-    count_cutoff = int(n_instances * 0.001)
-    to_delete = []
-    feature_counts = np.sum(X, axis=0)
-    to_delete = [idx for idx in xrange(X.shape[1]) if feature_counts[idx] <= count_cutoff]
-
-    return np.delete(X, to_delete, axis=1)
+    return one_hot_X, id_to_char
 
 def save_features(X, y, fname):
     '''Save X and y to a compressed .npz file'''
     np.savez_compressed(fname, X=X, y=y)
-
 
 label_to_id = defaultdict(lambda: len(label_to_id))
 cat_to_id = defaultdict(lambda: len(cat_to_id))
@@ -153,7 +141,6 @@ if __name__ == '__main__':
 
     fname = args.csv[:-4] if not args.fname else args.fname
 
-    #stemmer = SnowballStemmer(args.lang)
     print('reading features...')
     X, y = read_features_from_csv(args.csv)
     print('one hot encoding...')

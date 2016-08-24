@@ -21,7 +21,7 @@ from collections import Counter
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from sklearn.svm import LinearSVC
 
 def read_features(fname):
@@ -31,7 +31,7 @@ def read_features(fname):
 
 def make_splits(X, y):
     X = list(X) # TODO: Why does this have to be a list?
-    combined = zip(X, y)
+    combined = list(zip(X, y))
     random.shuffle(combined)
     X[:], y[:] = zip(*combined)
     split = int(len(y) * 0.8)
@@ -53,7 +53,11 @@ def get_classifiers(args):
     if 'nb' in args.algorithms:
         classifiers.append(MultinomialNB())
     if 'dt' in args.algorithms:
-        classifiers.append(DecisionTreeClassifier(max_features='sqrt', random_state=0))
+        classifiers.append(DecisionTreeClassifier(
+        random_state=0,
+        criterion='entropy',
+        min_samples_leaf=args.min_samples,
+        max_leaf_nodes=args.max_nodes))
     if 'svm' in args.algorithms:
         classifiers.append(LinearSVC(max_iter=500,random_state=0))
     if 'knn' in args.algorithms:
@@ -61,11 +65,29 @@ def get_classifiers(args):
 
     return classifiers
 
-def evaluate_classifier(clf, test_X, test_y):
+def evaluate_classifier(clf, test_X, test_y, args):
     preds = clf.predict(test_X)
-    accuracy = sum(preds == test_y) / float(len(test_y))
+    accuracy = accuracy_score(preds, test_y)# sum(preds == test_y) / float(len(test_y))
 
     print('Accuracy: {0} ({1})'.format(accuracy, str(clf)))
+    if args.cm or args.plot:
+        show_confusion_matrix(test_y, preds, args)
+
+def show_confusion_matrix(test_y, pred_y, args):
+    cm = confusion_matrix(test_y, pred_y, labels=sorted(list(set(test_y))))
+
+    if args.norm:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    np.set_printoptions(precision=2)
+
+    print('Confusion matrix')
+    if args.cm:
+        print(cm)
+    if args.plot:
+        from plotting import plot_confusion_matrix # Import here due to potential matplotlib issues
+        plot_confusion_matrix(cm, test_y)
+
+    print(classification_report(test_y, pred_y, sorted(list(set(test_y)))))
 
 random.seed(1337)
 if __name__ == '__main__':
