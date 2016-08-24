@@ -142,8 +142,8 @@ if __name__ == '__main__':
     fname = args.csv[:-4] if not args.fname else args.fname
 
     print('reading features...')
-    X, y = read_features_from_csv(args.csv)
+    X, y = read_features_from_csv(args)
     print('one hot encoding...')
-    X    = features_to_one_hot(X)
+    X, feature_ids  = features_to_one_hot(X)
     print('saving features...')
     save_features(X, y, fname)

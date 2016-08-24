@@ -34,7 +34,7 @@ def make_splits(X, y):
     combined = list(zip(X, y))
     random.shuffle(combined)
     X[:], y[:] = zip(*combined)
-    split = int(len(y) * 0.8)
+    split = int(len(y) * 0.7)
     train_X = X[:split]
     train_y = y[:split]
     test_X  = X[split:]
@@ -69,7 +69,8 @@ def evaluate_classifier(clf, test_X, test_y, args):
     preds = clf.predict(test_X)
     accuracy = accuracy_score(preds, test_y)# sum(preds == test_y) / float(len(test_y))
 
-    print('Accuracy: {0} ({1})'.format(accuracy, str(clf)))
+    #print('Accuracy: {0} ({1})'.format(accuracy, str(clf)))
+    print(accuracy)
     if args.cm or args.plot:
         show_confusion_matrix(test_y, preds, args)
 
@@ -94,13 +95,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--npz', help='feature npz filename', type=str)
     parser.add_argument('--algorithms', help='ml algorithms', nargs='+', required=True)
+    parser.add_argument('--plot', help='Show plot', action='store_true')
+    parser.add_argument('--cm', help='Show confusion matrix', action='store_true')
+    parser.add_argument('--norm', help='Normalise confusion matrix', action='store_true')
     args = parser.parse_args()
 
     X, y = read_features(args.npz)
     train_X, train_y, test_X, test_y = make_splits(X, y)
     baseline(train_y, test_y)
-    classifiers = get_classifiers()
+    classifiers = get_classifiers(args)
 
     for clf in classifiers:
         clf.fit(train_X, train_y)
-        evaluate_classifier(clf)
+        evaluate_classifier(clf, test_X, test_y, args)
