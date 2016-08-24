@@ -69,8 +69,7 @@ def evaluate_classifier(clf, test_X, test_y, args):
     preds = clf.predict(test_X)
     accuracy = accuracy_score(preds, test_y)# sum(preds == test_y) / float(len(test_y))
 
-    #print('Accuracy: {0} ({1})'.format(accuracy, str(clf)))
-    print(accuracy)
+    print('Accuracy: {0} ({1})'.format(accuracy, str(clf)))
     if args.cm or args.plot:
         show_confusion_matrix(test_y, preds, args)
 
