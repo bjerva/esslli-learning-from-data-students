@@ -7,26 +7,25 @@ The features are saved in a scikit-learn-friendly manner.
 '''
 
 __author__ = "Johannes Bjerva, and Malvina Nissim"
-__copyright__ = "Copyright 2007, The Cogent Project"
 __credits__ = ["Johannes Bjerva", "Malvina Nissim"]
 __license__ = "GPL v3"
-__version__ = "0.1"
+__version__ = "0.2"
 __maintainer__ = "Johannes Bjerva"
 __email__ = "j.bjerva@rug.nl"
 __status__ = "early alpha"
 
 import csv
 import argparse
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 import numpy as np
-from scipy.sparse import lil_matrix
+#from scipy.sparse import lil_matrix
 #from nltk.stem.snowball import SnowballStemmer
 
-def read_features_from_csv(fname):
+def read_features_from_csv(args):
     X = []
     y = []
-    with open(fname, 'rb') as csvfile:
+    with open(args.csv, 'rb') as csvfile:
         csv_reader = csv.reader(csvfile, delimiter=args.delimiter)
         header = csv_reader.next()
         label_index = header.index('label')
@@ -40,7 +39,7 @@ def read_features_from_csv(fname):
 
         types = get_column_types(header)
         for line in csv_reader:
-            label, features = get_line_features(line, types, label_index, feature_indices)
+            label, features = get_line_features(line, types, label_index, feature_indices, args)
             X.append(features)
             y.append(label)
 
@@ -58,7 +57,7 @@ def get_column_types(header):
 
     return types
 
-def get_line_features(line, feature_dtypes, label_index, feature_indices):
+def get_line_features(line, feature_dtypes, label_index, feature_indices, args):
     '''
     Gets the features in a line.
     Must have the format (label, feature(s)).
@@ -69,14 +68,16 @@ def get_line_features(line, feature_dtypes, label_index, feature_indices):
     # * Some features neet to be converted to categories
     # * Lemmatisation etc. for text
     label = line[label_index]
+    text_index = 1 #FIXME
     #label = label_to_id[line[label_index]]
 
     features = []
     for idx, column in enumerate(line):
         if idx == label_index: continue
         if idx in feature_indices:
-            sentence_features.append(cat_to_id[column+'idx'])
-        elif feature_dtypes[idx] == np.array:
+            #TODO: Fix categorical
+            features.append(cat_to_id[column+'idx'])
+        elif idx == text_index:
             sentence_features = []
             if args.nwords:
                 for n in xrange(args.nwords):
@@ -88,7 +89,7 @@ def get_line_features(line, feature_dtypes, label_index, feature_indices):
                     ngrams = find_ngrams(' '.join(column.split()), n+1)
                     sentence_features.extend([cat_to_id[' '.join(ngram)] for ngram in ngrams])
 
-        features.extend(sentence_features)
+            features.extend(sentence_features)
 
     features = np.asarray(features)
 
@@ -102,35 +103,54 @@ def preprocess(word):
 
 def features_to_one_hot(X):
     '''Convert, e.g., word id features to one hot representation'''
-    n_cats   = len(cat_to_id) + 1
+
+    feature_counts = Counter([i for j in X for i in j])
+    count_cutoff = int(len(X) * 0.001)
+    features_to_use = set([feature for feature, count in feature_counts.iteritems() if count > count_cutoff])
+    new_feature_ids = defaultdict(lambda: len(new_feature_ids))
+    for feature in features_to_use:
+        new_feature_ids[feature]
+
+    n_cats   = len(new_feature_ids)
     print('n_cats', n_cats)
     one_hot_X = np.zeros((len(X), n_cats), dtype=np.int32)
     # TODO: Fix for several cats
     for idx, sentence in enumerate(X):
         for cat_id in sentence:
-            one_hot_X[idx, cat_id] = 1
+            if cat_id in features_to_use:
+                one_hot_X[idx, new_feature_ids[cat_id]] = 1
 
     return one_hot_X
+
+def prune_features(X):
+    '''Delete features which occur very rarely.'''
+    n_instances  = X.shape[0]
+    count_cutoff = int(n_instances * 0.001)
+    to_delete = []
+    feature_counts = np.sum(X, axis=0)
+    to_delete = [idx for idx in xrange(X.shape[1]) if feature_counts[idx] <= count_cutoff]
+
+    return np.delete(X, to_delete, axis=1)
 
 def save_features(X, y, fname):
     '''Save X and y to a compressed .npz file'''
     np.savez_compressed(fname, X=X, y=y)
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--csv', help='feature csv filename', type=str, required=True)
-parser.add_argument('--fname', help='filename to store features', type=str, default=None, required=True)
-parser.add_argument('--nwords', type=int)
-parser.add_argument('--nchars', type=int)
-parser.add_argument('--features', nargs='+', default=[])
-parser.add_argument('--dtype', help='datatype in file', type=str, default=None)  # TODO: Not implemented
-parser.add_argument('--delimiter', help='csv delimiter', type=str, default=',')  # TODO: Not implemented
-parser.add_argument('--lang', help='data language', type=str, default='english')
-args = parser.parse_args()
 
-label_to_id = defaultdict(lambda: len(label_to_id)+1)
-cat_to_id = defaultdict(lambda: len(cat_to_id)+1)
-
+label_to_id = defaultdict(lambda: len(label_to_id))
+cat_to_id = defaultdict(lambda: len(cat_to_id))
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--csv', help='feature csv filename', type=str, required=True)
+    parser.add_argument('--fname', help='filename to store features', type=str, default=None)
+    parser.add_argument('--nwords', type=int)
+    parser.add_argument('--nchars', type=int)
+    parser.add_argument('--features', nargs='+', default=[])
+    parser.add_argument('--dtype', help='datatype in file', type=str, default=None)  # TODO: Not implemented
+    parser.add_argument('--delimiter', help='csv delimiter', type=str, default=',')  # TODO: Not implemented
+    parser.add_argument('--lang', help='data language', type=str, default='english')
+    args = parser.parse_args()
+
     fname = args.csv[:-4] if not args.fname else args.fname
 
     #stemmer = SnowballStemmer(args.lang)
