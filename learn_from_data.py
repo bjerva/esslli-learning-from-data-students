@@ -34,13 +34,17 @@ def make_splits(X, y):
     combined = list(zip(X, y))
     random.shuffle(combined)
     X[:], y[:] = zip(*combined)
-    split = int(len(y) * 0.7)
-    train_X = X[:split]
-    train_y = y[:split]
-    test_X  = X[split:]
-    test_y  = y[split:]
+    dev_split  = int(len(y) * 0.7)
+    test_split = dev_split + int(len(y) * 0.1)
 
-    return train_X, train_y, test_X, test_y
+    train_X = X[:dev_split]
+    train_y = y[:dev_split]
+    dev_X = X[dev_split:test_split]
+    dev_y = y[dev_split:test_split]
+    test_X  = X[test_split:]
+    test_y  = y[test_split:]
+
+    return train_X, train_y, dev_X, dev_y, test_X, test_y
 
 def baseline(train_y, test_y):
     most_common = Counter(train_y).most_common()[0][0]
@@ -67,7 +71,7 @@ def get_classifiers(args):
 
 def evaluate_classifier(clf, test_X, test_y, args):
     preds = clf.predict(test_X)
-    accuracy = accuracy_score(preds, test_y)# sum(preds == test_y) / float(len(test_y))
+    accuracy = accuracy_score(preds, test_y)
 
     print('Accuracy: {0} ({1})'.format(accuracy, str(clf)))
     if args.cm or args.plot:

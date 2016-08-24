@@ -57,11 +57,13 @@ if __name__ == '__main__':
     print('one hot encoding...')
     X, feature_ids = features_to_one_hot(X)
 
-    train_X, train_y, test_X, test_y = make_splits(X, y)
-    #test_X, test_y = train_X, train_y # XXX: Example
-    baseline(train_y, test_y)
+    train_X, train_y, dev_X, dev_y, test_X, test_y = make_splits(X, y)
+    #dev_X, dev_y = train_X, train_y # XXX: Example
+    baseline(train_y, dev_y)
     classifiers = get_classifiers(args)
 
     for clf in classifiers:
         clf.fit(train_X, train_y)
-        evaluate_classifier(clf, test_X, test_y, args)
+        evaluate_classifier(clf, dev_X, dev_y, args)
+
+    #evaluate_classifier(clf, test_X, test_y, args)
