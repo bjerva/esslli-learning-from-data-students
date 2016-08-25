@@ -8,7 +8,7 @@ the decision region induced by different kernels and parameter settings.
 Requirements
 ------------
  - Tkinter
- - scikits.learn
+ - scikit.learn
  - matplotlib with TkAgg
 """
 from __future__ import division
@@ -16,6 +16,7 @@ from __future__ import division
 #!/usr/bin/env python
 #
 # Author: Peter Prettenhoer <peter.prettenhofer@gmail.com>
+# Minor adaptations: Johannes Bjerva <johannes.bjerva@gmail.com>
 #
 # License: BSD Style.
 
