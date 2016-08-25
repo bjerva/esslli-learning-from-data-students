@@ -49,6 +49,7 @@ if __name__ == '__main__':
     parser.add_argument('--norm', help='Normalise confusion matrix', action='store_true')
     parser.add_argument('--min-samples', help='Min leaf samples in decision tree', type=int, default=1)
     parser.add_argument('--max-nodes', help='Max leaf nodes in decision tree', type=int, default=None)
+    parser.add_argument('--neighbours', help='Min leaf samples in decision tree', type=int, default=1)
 
     args = parser.parse_args()
 
@@ -58,12 +59,15 @@ if __name__ == '__main__':
     X, feature_ids = features_to_one_hot(X)
 
     train_X, train_y, dev_X, dev_y, test_X, test_y = make_splits(X, y)
-    #dev_X, dev_y = train_X, train_y # XXX: Example
     baseline(train_y, dev_y)
     classifiers = get_classifiers(args)
 
     for clf in classifiers:
         clf.fit(train_X, train_y)
+        print('Train set:')
+        evaluate_classifier(clf, train_X, train_y, args)
+        print('Dev set:')
         evaluate_classifier(clf, dev_X, dev_y, args)
 
+    #print('Test set:')
     #evaluate_classifier(clf, test_X, test_y, args)
