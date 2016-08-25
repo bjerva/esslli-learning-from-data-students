@@ -65,7 +65,7 @@ def get_classifiers(args):
     if 'svm' in args.algorithms:
         classifiers.append(LinearSVC(max_iter=500,random_state=0))
     if 'knn' in args.algorithms:
-        classifiers.append(KNeighborsClassifier(n_neighbors=args.neighbours))
+        classifiers.append(KNeighborsClassifier(n_neighbors=args.k))
 
     return classifiers
 

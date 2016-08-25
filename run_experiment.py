@@ -49,7 +49,8 @@ if __name__ == '__main__':
     parser.add_argument('--norm', help='Normalise confusion matrix', action='store_true')
     parser.add_argument('--min-samples', help='Min leaf samples in decision tree', type=int, default=1)
     parser.add_argument('--max-nodes', help='Max leaf nodes in decision tree', type=int, default=None)
-    parser.add_argument('--neighbours', help='Min leaf samples in decision tree', type=int, default=1)
+    parser.add_argument('--k', help='number of neighbours for k-NN', type=int, default=1)
+    parser.add_argument('--max-train-size', help='maximum number of training instances to look at', type=int, default=None)
 
     args = parser.parse_args()
 
@@ -59,14 +60,19 @@ if __name__ == '__main__':
     X, feature_ids = features_to_one_hot(X)
 
     train_X, train_y, dev_X, dev_y, test_X, test_y = make_splits(X, y)
+    if args.max_train_size:
+        train_X = train_X[:args.max_train_size]
+        train_y = train_y[:args.max_train_size]
+
+    print('n train samples: {0}'.format(len(train_y)))
     baseline(train_y, dev_y)
     classifiers = get_classifiers(args)
 
     for clf in classifiers:
         clf.fit(train_X, train_y)
-        print('Train set:')
+        print('Results on the train set:')
         evaluate_classifier(clf, train_X, train_y, args)
-        print('Dev set:')
+        print('\n\nResults on the test set:')
         evaluate_classifier(clf, dev_X, dev_y, args)
 
     #print('Test set:')

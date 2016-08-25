@@ -113,7 +113,7 @@ def features_to_one_hot(X):
         new_feature_ids[feature]
 
     n_cats   = len(new_feature_ids)
-    print('n_cats', n_cats)
+    print('n features: {0}'.format(n_cats))
     one_hot_X = np.zeros((len(X), n_cats), dtype=np.float32)
     # TODO: Fix for several cats
     for idx, sentence in enumerate(X):
