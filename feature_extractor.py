@@ -50,7 +50,7 @@ def get_column_types(header):
         if 'cat' in name:
             types[idx] = np.array # TODO
         else:
-            types[idx] = np.int32
+            types[idx] = np.float32
 
     return types
 
@@ -71,8 +71,13 @@ def get_line_features(line, feature_dtypes, label_index, text_index, feature_ind
     for idx, column in enumerate(line):
         if idx == label_index: continue
         if idx in feature_indices:
-            #TODO: Fix categorical
+            #TODO: Fix non-categorical
             features.append(cat_to_id[column+'idx'])
+            # if feature_dtypes[idx] == np.float32:
+            #     pass#
+            # else:
+            #     features.append(cat_to_id[column+'idx'])
+
         elif idx == text_index:
             sentence_features = []
             if args.nwords:
@@ -92,7 +97,7 @@ def get_line_features(line, feature_dtypes, label_index, text_index, feature_ind
     return label, features
 
 def find_ngrams(sentence, n):
-  return set(zip(*[sentence[idx:] for idx in xrange(n)]))
+  return list(zip(*[sentence[idx:] for idx in xrange(n)]))
 
 def preprocess(word):
     return word.strip()#stemmer.stem(word.strip())
@@ -109,12 +114,14 @@ def features_to_one_hot(X):
 
     n_cats   = len(new_feature_ids)
     print('n_cats', n_cats)
-    one_hot_X = np.zeros((len(X), n_cats), dtype=np.int32)
+    one_hot_X = np.zeros((len(X), n_cats), dtype=np.float32)
     # TODO: Fix for several cats
     for idx, sentence in enumerate(X):
         for cat_id in sentence:
             if cat_id in features_to_use:
                 one_hot_X[idx, new_feature_ids[cat_id]] = 1
+
+    one_hot_X /= np.max(one_hot_X, axis=0)
 
     id_to_cat = dict([(idx, cat) for cat, idx in cat_to_id.iteritems()])
     id_to_char = dict([(new_id, id_to_cat[old_id]) for old_id, new_id in new_feature_ids.iteritems()])
