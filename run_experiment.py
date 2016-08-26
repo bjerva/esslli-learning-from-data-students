@@ -70,10 +70,10 @@ if __name__ == '__main__':
 
     for clf in classifiers:
         clf.fit(train_X, train_y)
-        print('Results on the train set:')
+        print('\nResults on the train set:')
         evaluate_classifier(clf, train_X, train_y, args)
-        print('\n\nResults on the test set:')
+        print('\nResults on the dev set:')
         evaluate_classifier(clf, dev_X, dev_y, args)
 
-    #print('Test set:')
+    #print('\nResults on the test set:')
     #evaluate_classifier(clf, test_X, test_y, args)

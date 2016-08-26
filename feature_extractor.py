@@ -26,7 +26,11 @@ def read_features_from_csv(args):
         csv_reader = csv.reader(csvfile, delimiter=args.delimiter)
         header = next(csv_reader)
         label_index = header.index('label')
-        text_index = header.index('text-cat')
+        try:
+            text_index = header.index('text-cat')
+        except:
+            print('No text-cat found')
+            text_index = -1
 
         feature_indices = []
         for feature in args.features:
@@ -38,6 +42,7 @@ def read_features_from_csv(args):
         types = get_column_types(header)
         for line in csv_reader:
             label, features = get_line_features(line, types, label_index, text_index, feature_indices, args)
+            #TODO: Get numerical features
             X.append(features)
             y.append(label)
 
