@@ -35,7 +35,7 @@ def make_splits(X, y):
     random.shuffle(combined)
     X[:], y[:] = zip(*combined)
     dev_split  = int(len(y) * 0.7)
-    test_split = dev_split + int(len(y) * 0.1)
+    test_split = dev_split + int(len(y) * 0.15)
 
     train_X = X[:dev_split]
     train_y = y[:dev_split]
